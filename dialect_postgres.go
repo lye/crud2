@@ -12,7 +12,7 @@ func (PostgresDialect) Scan(rows *sql.Rows, args ...FieldBinder) error {
 	return genericScan(rows, args...)
 }
 
-func (PostgresDialect) Insert(db DbIsh, table, sqlIdFieldName string, obj FieldEnumerator) (int64, error) {
+func (PostgresDialect) Insert(db DbIsh, table, sqlIdFieldName string, obj FieldEnumerator) (id int64, er error) {
 	objFields, objValues := obj.EnumerateFields()
 
 	if len(objFields) != len(objValues) {
@@ -32,20 +32,38 @@ func (PostgresDialect) Insert(db DbIsh, table, sqlIdFieldName string, obj FieldE
 		}
 	}
 
-	q := `
-		INSERT INTO %s 
-		(%s)
-		VALUES (%s)
-		RETURNING %s
-	`
-	q = fmt.Sprintf(q, table, strings.Join(sqlFields, ", "), strings.Join(placeholders, ", "), sqlIdFieldName)
+	var q string
 
-	res, er := db.Exec(q, sqlValues...)
-	if er != nil {
-		return 0, er
+	if sqlIdFieldName != "" {
+		q = `
+			INSERT INTO %s 
+			(%s)
+			VALUES (%s)
+			RETURNING %s
+		`
+		q = fmt.Sprintf(q, table, strings.Join(sqlFields, ", "), strings.Join(placeholders, ", "), sqlIdFieldName)
+
+		rows, er := db.Query(q, sqlValues...)
+		if er != nil {
+			return 0, er
+		}
+		defer rows.Close()
+
+		rows.Next()
+		er = rows.Scan(&id)
+
+	} else {
+		q = `
+			INSERT INTO %s 
+			(%s)
+			VALUES (%s)
+		`
+		q = fmt.Sprintf(q, table, strings.Join(sqlFields, ", "), strings.Join(placeholders, ", "))
+
+		_, er = db.Exec(q, sqlValues...)
 	}
 
-	return res.LastInsertId()
+	return
 }
 
 func (PostgresDialect) Update(db DbIsh, table, sqlIdFieldName string, obj FieldEnumerator) error {
