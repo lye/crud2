@@ -51,7 +51,7 @@ func genericInsert(db DbIsh, table, sqlIdFieldName string, obj FieldEnumerator) 
 	objFields, objValues := obj.EnumerateFields()
 
 	if len(objFields) != len(objValues) {
-		panic("crud2: FieldEnumerator.EnumerateFields' return values must have same length")
+		return 0, ErrLengthMismatch
 	}
 
 	sqlFields := make([]string, 0, len(objFields))
@@ -86,7 +86,7 @@ func genericUpdate(db DbIsh, table, sqlIdFieldName string, obj FieldEnumerator) 
 	objFields, objValues := obj.EnumerateFields()
 
 	if len(objFields) != len(objValues) {
-		panic("crud2: FieldEnumerator.EnumerateFields' return values must have same length")
+		return ErrLengthMismatch
 	}
 
 	sqlFields := make([]string, 0, len(objFields))
@@ -106,7 +106,7 @@ func genericUpdate(db DbIsh, table, sqlIdFieldName string, obj FieldEnumerator) 
 	}
 
 	if idValue == nil {
-		panic("crud2: FieldEnumerator.EnumerateFields did not return a field that matched sqlIdFieldName")
+		return ErrUnsetPKey
 	}
 
 	sqlValues = append(sqlValues, idValue)

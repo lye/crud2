@@ -6,9 +6,8 @@ As an added bonus, `crud2` also supports an extensible layer for supporting diff
 
 Some of the original features are currently missing:
 
- * `ScanAll` is not implemented yet.
+ * `ScanAll` is not optimized to use `Cloner` yet.
  * `,unix` times are neither handled nor parsed correctly.
- * Pointer values may not work correctly.
  * The documentation needs work.
 
 These features will be forthcoming as they become required.

@@ -2,6 +2,8 @@ package crud
 
 import (
 	"database/sql"
+	"fmt"
+	"reflect"
 )
 
 // DefaultDialect is the Dialect used by the package-level Scan/Insert/Update.
@@ -12,6 +14,34 @@ var DefaultDialect Dialect = SQLite3Dialect{}
 // Scan is shorthand for DefaultDialect.Scan.
 func Scan(rows *sql.Rows, args ...FieldBinder) error {
 	return DefaultDialect.Scan(rows, args...)
+}
+
+func ScanAll(rows *sql.Rows, slicePtr interface{}) error {
+	defer rows.Close()
+
+	sliceVal := reflect.ValueOf(slicePtr).Elem()
+
+	if sliceVal.Kind() != reflect.Slice {
+		return fmt.Errorf("Argument to crud.ScanAll is not a slice")
+	}
+
+	elemType := sliceVal.Type().Elem()
+
+	if elemType.Kind() != reflect.Struct {
+		return fmt.Errorf("Argument to crud.ScanAll must be a slice of structs")
+	}
+
+	for rows.Next() {
+		newVal := reflect.New(elemType)
+
+		if er := Scan(rows, newVal.Interface().(FieldBinder)); er != nil {
+			return er
+		}
+
+		sliceVal.Set(reflect.Append(sliceVal, newVal.Elem()))
+	}
+
+	return nil
 }
 
 // Insert is shorthand for DefaultDialect.Insert.
