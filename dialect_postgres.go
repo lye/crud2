@@ -13,6 +13,10 @@ func (PostgresDialect) Scan(rows *sql.Rows, args ...FieldBinder) error {
 }
 
 func (PostgresDialect) Insert(db DbIsh, table, sqlIdFieldName string, obj FieldEnumerator) (id int64, er error) {
+	if er := deflate(obj); er != nil {
+		return 0, er
+	}
+
 	objFields, objValues := obj.EnumerateFields()
 
 	if len(objFields) != len(objValues) {

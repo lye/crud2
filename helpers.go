@@ -53,3 +53,19 @@ func Insert(db DbIsh, table, sqlIdFieldName string, obj FieldEnumerator) (int64,
 func Update(db DbIsh, table, sqlIdFieldName string, obj FieldEnumerator) error {
 	return DefaultDialect.Update(db, table, sqlIdFieldName, obj)
 }
+
+func inflate(val interface{}) (er error) {
+	if inflater, ok := val.(Inflater); ok {
+		er = inflater.CrudInflate()
+	}
+
+	return
+}
+
+func deflate(val interface{}) (er error) {
+	if deflater, ok := val.(Deflater); ok {
+		er = deflater.CrudDeflate()
+	}
+
+	return
+}

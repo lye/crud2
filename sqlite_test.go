@@ -33,6 +33,23 @@ type TimeFoo struct {
 	TimePtr *time.Time `crud:"time_val_ptr"`
 }
 
+type ModifiedFoo struct {
+	Id   int64     `crud:"foo_id"`
+	Num  int64     `crud:"foo_num"`
+	Str  string    `crud:"foo_str"`
+	Time time.Time `crud:"foo_time"`
+}
+
+func (foo *ModifiedFoo) CrudDeflate() error {
+	foo.Num += 10
+	return nil
+}
+
+func (foo *ModifiedFoo) CrudInflate() error {
+	foo.Num -= 1
+	return nil
+}
+
 func newFoo() *Foo {
 	return &Foo{
 		Num:  42,
@@ -587,5 +604,78 @@ func TestTimeMarshalling(t *testing.T) {
 			rows.Close()
 			testEqual()
 		}
+	}
+}
+
+func TestInflateDeflate(t *testing.T) {
+	db, er := createDb()
+	if er != nil {
+		t.Fatal(er)
+	}
+	defer db.Close()
+
+	f := ModifiedFoo{
+		Num: 2,
+	}
+
+	f.Id, er = Insert(db, "foo", "foo_id", &f)
+	if er != nil {
+		t.Fatal(er)
+	}
+
+	if f.Num != 12 {
+		t.Errorf("f.Num not deflated: got %d", f.Num)
+	}
+
+	fout := ModifiedFoo{}
+
+	rows, er := db.Query("SELECT * FROM foo")
+	if er != nil {
+		t.Fatal(er)
+	}
+
+	if !rows.Next() {
+		rows.Close()
+		t.Errorf("No rows?")
+
+	} else {
+		if er := Scan(rows, &fout); er != nil {
+			t.Fatal(er)
+		}
+
+		rows.Close()
+	}
+
+	if fout.Num != 11 {
+		t.Errorf("First round trip failed: got %d", fout.Num)
+	}
+
+	if er := Update(db, "foo", "foo_id", &f); er != nil {
+		t.Fatal(f)
+	}
+
+	if f.Num != 22 {
+		t.Errorf("f.Num not deflated: got %d", f.Num)
+	}
+
+	rows, er = db.Query("SELECT * FROM foo")
+	if er != nil {
+		t.Fatal(er)
+	}
+
+	if !rows.Next() {
+		rows.Close()
+		t.Errorf("No rows again?")
+
+	} else {
+		if er := Scan(rows, &fout); er != nil {
+			t.Fatal(er)
+		}
+
+		rows.Close()
+	}
+
+	if fout.Num != 21 {
+		t.Errorf("Second round trip failed: got %d", fout.Num)
 	}
 }

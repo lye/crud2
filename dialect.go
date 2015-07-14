@@ -44,10 +44,24 @@ func genericScan(rows *sql.Rows, args ...FieldBinder) error {
 		}
 	}
 
-	return rows.Scan(values...)
+	if er := rows.Scan(values...); er != nil {
+		return er
+	}
+
+	for _, arg := range args {
+		if er := inflate(arg); er != nil {
+			return er
+		}
+	}
+
+	return nil
 }
 
 func genericInsert(db DbIsh, table, sqlIdFieldName string, obj FieldEnumerator) (int64, error) {
+	if er := deflate(obj); er != nil {
+		return 0, er
+	}
+
 	objFields, objValues := obj.EnumerateFields()
 
 	if len(objFields) != len(objValues) {
@@ -83,6 +97,10 @@ func genericInsert(db DbIsh, table, sqlIdFieldName string, obj FieldEnumerator) 
 }
 
 func genericUpdate(db DbIsh, table, sqlIdFieldName string, obj FieldEnumerator) error {
+	if er := deflate(obj); er != nil {
+		return er
+	}
+
 	objFields, objValues := obj.EnumerateFields()
 
 	if len(objFields) != len(objValues) {

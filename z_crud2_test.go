@@ -130,3 +130,42 @@ func (self *TimeFoo) EnumerateFields() (names []string, values []interface{}) {
 
 	return
 }
+
+func (self *ModifiedFoo) BindFields(names []string, values []interface{}) {
+	for i, name := range names {
+		switch name {
+
+		case "foo_id":
+			values[i] = &self.Id
+
+		case "foo_num":
+			values[i] = &self.Num
+
+		case "foo_str":
+			values[i] = &self.Str
+
+		case "foo_time":
+			values[i] = &self.Time
+
+		}
+	}
+}
+
+func (self *ModifiedFoo) EnumerateFields() (names []string, values []interface{}) {
+	names = make([]string, 0, 4)
+	values = make([]interface{}, 0, 4)
+
+	names = append(names, "foo_id")
+	values = append(values, &self.Id)
+
+	names = append(names, "foo_num")
+	values = append(values, &self.Num)
+
+	names = append(names, "foo_str")
+	values = append(values, &self.Str)
+
+	names = append(names, "foo_time")
+	values = append(values, &self.Time)
+
+	return
+}

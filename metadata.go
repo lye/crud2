@@ -30,3 +30,15 @@ type FieldEnumerator interface {
 	// object would like to modify, and a slice of all corresponding values.
 	EnumerateFields() ([]string, []interface{})
 }
+
+// Deflater allows structs to optionally provide functionality that is invoked
+// before they are marshalled into the database.
+type Deflater interface {
+	CrudDeflate() error
+}
+
+// Inflater allows structs to optionally provide functionality that is invoked
+// after they are retrieved from the database.
+type Inflater interface {
+	CrudInflate() error
+}
