@@ -14,6 +14,39 @@ var tplFuncs = map[string]interface{}{
 }
 
 const structTemplateStr = `
+func fetch{{.Name}}(db crud.DbIsh, q string, args ...interface{}) (out *{{.Name}}, er error) {
+	rows, er := db.Query(q, args...)
+	if er != nil {
+		return nil, er
+	}
+	defer rows.Close()
+
+	if rows.Next() {
+		out = new({{.Name}})
+		er = crud.Scan(rows, out)
+	}
+
+	return
+}
+
+func fetch{{.Name}}Slice(db crud.DbIsh, q string, args ...interface{}) (out []*{{.Name}}, er error) {
+	rows, er := db.Query(q, args...)
+	if er != nil {
+		return nil, er
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		c := new({{.Name}})
+		if er := crud.Scan(rows, c); er != nil {
+			return nil, er
+		}
+		out = append(out, c)
+	}
+
+	return
+}
+
 func (self *{{.Name}}) BindFields(names []string, values []interface{}) {
 	for i, name := range names {
 		switch name {
