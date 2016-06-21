@@ -14,32 +14,34 @@ var tplFuncs = map[string]interface{}{
 }
 
 const structTemplateStr = `
-func fetch{{.Name}}(db crud.DbIsh, q string, args ...interface{}) (out *{{.Name}}, er error) {
+func fetch{{.Name}}(db crud.DbIsh, q string, args ...interface{}) (out *{{.Name}}) {
 	rows, er := db.Query(q, args...)
 	if er != nil {
-		return nil, er
+		panic(er)
 	}
 	defer rows.Close()
 
 	if rows.Next() {
 		out = new({{.Name}})
-		er = crud.Scan(rows, out)
+		if er = crud.Scan(rows, out); er != nil {
+			panic(er)
+		}
 	}
 
 	return
 }
 
-func fetch{{.Name}}Slice(db crud.DbIsh, q string, args ...interface{}) (out []*{{.Name}}, er error) {
+func fetch{{.Name}}Slice(db crud.DbIsh, q string, args ...interface{}) (out []*{{.Name}}) {
 	rows, er := db.Query(q, args...)
 	if er != nil {
-		return nil, er
+		panic(er)
 	}
 	defer rows.Close()
 
 	for rows.Next() {
 		c := new({{.Name}})
 		if er := crud.Scan(rows, c); er != nil {
-			return nil, er
+			panic(er)
 		}
 		out = append(out, c)
 	}
