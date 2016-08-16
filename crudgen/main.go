@@ -10,6 +10,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"sort"
 	"strconv"
 	"strings"
 )
@@ -24,7 +25,7 @@ type StructType struct {
 	StructType *ast.StructType
 
 	Name   string
-	Fields []StructField
+	Fields StructFieldList
 }
 
 func (structType StructType) Metadata() string {
@@ -71,7 +72,7 @@ func main() {
 		log.Fatal(er)
 	}
 
-	structTypes := []*StructType{}
+	structTypes := StructTypeList{}
 
 	if len(pkgs) > 1 {
 		log.Fatal("Multiple packages found! crudgen only supports one package at a time.")
@@ -105,6 +106,7 @@ func main() {
 			}
 		}
 	}
+	sort.Sort(structTypes)
 
 	// Enumerate the structs we've pulled out and parse their field declarations.
 	for _, structType := range structTypes {
@@ -135,6 +137,8 @@ func main() {
 				})
 			}
 		}
+
+		sort.Sort(structType.Fields)
 	}
 
 	filePath := filepath.Join(dirPath, outputFilename)
