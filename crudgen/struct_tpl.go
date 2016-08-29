@@ -38,6 +38,8 @@ func fetch{{.Name}}Slice(db crud.DbIsh, q string, args ...interface{}) (out []*{
 	}
 	defer rows.Close()
 
+	out = make([]*{{.Name}}, 0)
+
 	for rows.Next() {
 		c := new({{.Name}})
 		if er := crud.Scan(rows, c); er != nil {
