@@ -58,6 +58,71 @@ func fileFilter(fi os.FileInfo) bool {
 	return fi.Name() != outputFilename
 }
 
+func buildStructType(structType *StructType, astStruct *ast.StructType, prefix string) {
+	for _, field := range astStruct.Fields.List {
+		if field.Tag == nil {
+			continue
+		}
+
+		if len(field.Names) == 0 {
+			// XXX: We may want to support anonymous fields in the future.
+			continue
+		}
+
+		name := field.Names[0].Name
+
+		tagList, er := strconv.Unquote(field.Tag.Value)
+		if er != nil {
+			continue
+		}
+
+		rtags := reflect.StructTag(tagList)
+
+		if tag := rtags.Get(structTagName); tag != "" {
+			tagList := strings.Split(tag, ",")
+
+			if len(tagList) > 1 {
+				if tagList[1] == "recurse" {
+					// The "recurse" flag is valid only on structs, and
+					// indicates that all fields of the tagged struct
+					// should be included as well.
+					// XXX: This is a bit of a mess.
+					ident, ok := field.Type.(*ast.Ident)
+					if !ok {
+						panic("'recurse' Field type is not an ast.Ident?")
+					}
+					if ident.Obj == nil || ident.Obj.Decl == nil {
+						panic("'recurse' Field type doesn't refer to an object")
+					}
+
+					ts, ok := ident.Obj.Decl.(*ast.TypeSpec)
+					if !ok || ts.Type == nil {
+						panic("'recurse' Field type declaration doesn't ... have ... a TypeSpec?")
+					}
+
+					st, ok := ts.Type.(*ast.StructType)
+					if !ok {
+						panic("'recurse' field isn't a struct")
+					}
+
+					buildStructType(structType, st, prefix + name + ".")
+				}
+			}
+
+			if tagList[0] != "" {
+				// NB: Intentionally skip entries like `,recurse`.
+				structType.Fields = append(structType.Fields, StructField{
+					Name:    prefix + name,
+					SqlName: tagList[0],
+					Type:    field.Type,
+				})
+			}
+		}
+	}
+
+	sort.Sort(structType.Fields)
+}
+
 func main() {
 	dirPath := "."
 
@@ -110,35 +175,7 @@ func main() {
 
 	// Enumerate the structs we've pulled out and parse their field declarations.
 	for _, structType := range structTypes {
-		for _, field := range structType.StructType.Fields.List {
-			if field.Tag == nil {
-				continue
-			}
-
-			if len(field.Names) == 0 {
-				// XXX: We may want to support anonymous fields in the future.
-				continue
-			}
-
-			name := field.Names[0].Name
-
-			tagList, er := strconv.Unquote(field.Tag.Value)
-			if er != nil {
-				continue
-			}
-
-			tags := reflect.StructTag(tagList)
-
-			if tags.Get(structTagName) != "" {
-				structType.Fields = append(structType.Fields, StructField{
-					Name:    name,
-					SqlName: tags.Get(structTagName),
-					Type:    field.Type,
-				})
-			}
-		}
-
-		sort.Sort(structType.Fields)
+		buildStructType(structType, structType.StructType, "")
 	}
 
 	filePath := filepath.Join(dirPath, outputFilename)
