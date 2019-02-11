@@ -67,7 +67,7 @@ func (self *{{.Name}}) EnumerateFields() (names []string, values []interface{}) 
 	values = make([]interface{}, 0, {{length .Fields}})
 {{range .Fields}}
 	names = append(names, {{quote .SqlName}})
-	values = append(values, &self.{{.Name}})
+	values = append(values, {{if .EnumAddr}}&{{end}}self.{{.Name}})
 {{end}}
 	return
 }

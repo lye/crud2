@@ -48,6 +48,19 @@ type StructField struct {
 	Type    ast.Expr
 }
 
+func (f StructField) EnumAddr() bool {
+	if id, ok := f.Type.(*ast.Ident); ok {
+		switch id.Name {
+		case "int64":
+			return false
+		case "string":
+			return false
+		}
+	}
+
+	return true
+}
+
 func fileFilter(fi os.FileInfo) bool {
 	name := fi.Name()
 
